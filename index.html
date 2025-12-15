@@ -1,0 +1,1972 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[KSMS APPS] 조기석 선생님 교실 응답 시스템</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-light: #818CF8;
+            --primary-dark: #3730A3;
+            --secondary: #10B981;
+            --accent: #F59E0B;
+            --danger: #EF4444;
+            --bg-main: #F8FAFC;
+            --bg-card: #FFFFFF;
+            --text-primary: #1E293B;
+            --text-secondary: #64748B;
+            --border: #E2E8F0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* 로그인 화면 */
+        .login-screen {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-screen::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 30px 30px;
+            animation: float 20s linear infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(-30px, -30px); }
+        }
+
+        .login-card {
+            background: var(--bg-card);
+            padding: 3rem;
+            border-radius: 24px;
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+            z-index: 1;
+            max-width: 400px;
+            width: 90%;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .login-card h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .login-emoji {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            letter-spacing: 0.3rem;
+        }
+
+        .login-card p {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            font-size: 1.1rem;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            outline: none;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .login-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+        }
+
+        .login-hint {
+            margin-top: 1.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* 공통 헤더 */
+        .app-header {
+            background: var(--bg-card);
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .app-header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.3rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.2rem;
+            background: var(--bg-main);
+            border-radius: 50px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .user-badge.teacher {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            padding: 0.6rem 1.2rem;
+            background: var(--bg-main);
+            border-radius: 50px;
+        }
+
+        .connection-status .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--danger);
+            animation: pulse 2s infinite;
+        }
+
+        .connection-status.connected .dot {
+            background: var(--secondary);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* 통일된 버튼 스타일 */
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #059669;
+            transform: scale(1.05);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-outline {
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .btn-lg {
+            padding: 1rem 1.5rem;
+            font-size: 1rem;
+            border-radius: 14px;
+        }
+
+        .btn-block {
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* 교사용 화면 */
+        .teacher-app {
+            display: none;
+            min-height: calc(100vh - 70px);
+        }
+
+        .teacher-container {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 1.5rem;
+            padding: 1.5rem;
+        }
+
+        .control-panel {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            height: fit-content;
+            position: sticky;
+            top: 90px;
+        }
+
+        .panel-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .mode-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .mode-btn {
+            padding: 1rem 1.25rem;
+            border: 2px solid var(--border);
+            border-radius: 14px;
+            background: var(--bg-card);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .mode-btn:hover {
+            border-color: var(--primary-light);
+            background: rgba(79, 70, 229, 0.05);
+        }
+
+        .mode-btn.active {
+            border-color: var(--primary);
+            background: rgba(79, 70, 229, 0.1);
+            color: var(--primary);
+        }
+
+        .mode-btn .icon {
+            font-size: 1.5rem;
+        }
+
+        .question-input-area {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .question-input-area label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .question-input {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 1rem;
+            resize: vertical;
+            min-height: 100px;
+            transition: all 0.3s;
+        }
+
+        .question-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .choices-config {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--bg-main);
+            border-radius: 12px;
+        }
+
+        .choice-count-selector {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .choice-count-selector label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .choice-count-selector select {
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .choice-count-selector select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .choices-input {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .choice-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .choice-row span {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary);
+            color: white;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .choice-row input {
+            flex: 1;
+            padding: 0.6rem 0.875rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        .choice-row input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* 대시보드 */
+        .dashboard {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            min-width: 0;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .dashboard-header h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .dashboard-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .response-count {
+            padding: 0.6rem 1.2rem;
+            background: var(--primary);
+            color: white;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .current-question {
+            background: rgba(79, 70, 229, 0.1);
+            border: 1px solid rgba(79, 70, 229, 0.2);
+            border-radius: 14px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .current-question .label {
+            font-size: 0.8rem;
+            color: var(--primary);
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .current-question .text {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .chart-container {
+            max-width: 320px;
+            margin: 0 auto 1.5rem;
+            padding: 1rem;
+            background: var(--bg-main);
+            border-radius: 14px;
+        }
+
+        .responses-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 1rem;
+        }
+
+        .response-card {
+            background: var(--bg-main);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.25rem;
+            animation: fadeIn 0.3s ease-out;
+            transition: all 0.3s;
+        }
+
+        .response-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .response-card .name {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.9rem;
+        }
+
+        .response-card .name::before {
+            content: '😊';
+            font-size: 1rem;
+        }
+
+        .response-card .answer {
+            font-size: 2rem;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .response-card .answer.ox-o {
+            color: var(--secondary);
+        }
+
+        .response-card .answer.ox-x {
+            color: var(--danger);
+        }
+
+        .response-card .answer.choice {
+            color: var(--primary);
+        }
+
+        .response-card .text-answer {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }
+
+        .response-card .image-answer {
+            width: 100%;
+            border-radius: 8px;
+            margin-top: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid var(--border);
+        }
+
+        .response-card .image-answer:hover {
+            transform: scale(1.02);
+            box-shadow: var(--shadow);
+        }
+
+        .waiting-message {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .waiting-message .icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .participant-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .participant-list-header h3 {
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        .participant-card {
+            text-align: center;
+            padding: 1.5rem 1rem;
+        }
+
+        .participant-card .name {
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .participant-card .name::before {
+            content: '🙋';
+        }
+
+        /* 이미지 모달 */
+        .image-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .image-modal.active {
+            display: flex;
+        }
+
+        .image-modal img {
+            max-width: 90%;
+            max-height: 85vh;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .image-modal .close-modal {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: white;
+            border: none;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            font-size: 1.25rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .image-modal .close-modal:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .image-modal .student-name {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 0.75rem 2rem;
+            border-radius: 50px;
+            font-weight: 600;
+        }
+
+        /* 학생용 화면 */
+        .student-app {
+            display: none;
+            min-height: calc(100vh - 70px);
+        }
+
+        .student-container {
+            max-width: 560px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        .student-waiting {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: var(--bg-card);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .student-waiting .icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .student-waiting h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .student-waiting p {
+            color: var(--text-secondary);
+        }
+
+        .student-question-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .student-question-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 1.5rem;
+        }
+
+        .student-question-header .mode-label {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .student-question-header .question-text {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .student-answer-area {
+            padding: 1.5rem;
+        }
+
+        /* OX 버튼 */
+        .ox-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .ox-btn {
+            padding: 2.5rem 1rem;
+            font-size: 3.5rem;
+            font-weight: 800;
+            font-family: 'Outfit', sans-serif;
+            border: 3px solid var(--border);
+            border-radius: 16px;
+            background: var(--bg-main);
+            cursor: pointer;
+            transition: all 0.3s;
+            color: var(--text-secondary);
+        }
+
+        .ox-btn.o:hover, .ox-btn.o.selected {
+            border-color: var(--secondary);
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--secondary);
+        }
+
+        .ox-btn.x:hover, .ox-btn.x.selected {
+            border-color: var(--danger);
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        /* 선택 퀴즈 */
+        .choice-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .choice-btn {
+            padding: 1rem 1.25rem;
+            font-size: 1rem;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            background: var(--bg-main);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+            color: var(--text-primary);
+        }
+
+        .choice-btn .num {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--border);
+            border-radius: 8px;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+            transition: all 0.3s;
+        }
+
+        .choice-btn:hover {
+            border-color: var(--primary-light);
+            background: rgba(79, 70, 229, 0.05);
+        }
+
+        .choice-btn.selected {
+            border-color: var(--primary);
+            background: rgba(79, 70, 229, 0.1);
+        }
+
+        .choice-btn.selected .num {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* 텍스트 입력 */
+        .text-input-area textarea {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1rem;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 150px;
+            transition: all 0.3s;
+        }
+
+        .text-input-area textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* 화이트보드 */
+        .whiteboard-area {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid var(--border);
+        }
+
+        .whiteboard-canvas {
+            width: 100%;
+            height: 280px;
+            cursor: crosshair;
+            touch-action: none;
+        }
+
+        .whiteboard-tools {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            background: var(--bg-main);
+            border-top: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        .tool-btn {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-card);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .tool-btn:hover {
+            background: var(--bg-main);
+        }
+
+        .tool-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .color-picker {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: none;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+        }
+
+        .submitted-message {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 12px;
+        }
+
+        .submitted-message .icon {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .submitted-message p {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--secondary);
+        }
+
+        /* 반응형 */
+        @media (max-width: 900px) {
+            .teacher-container {
+                grid-template-columns: 1fr;
+            }
+
+            .control-panel {
+                position: relative;
+                top: 0;
+            }
+
+            .header-controls {
+                flex-wrap: wrap;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .login-card {
+                padding: 2rem;
+            }
+
+            .login-card h1 {
+                font-size: 1.75rem;
+            }
+
+            .app-header {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .app-header h1 {
+                font-size: 1.1rem;
+            }
+
+            .header-controls {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .ox-btn {
+                padding: 2rem 1rem;
+                font-size: 2.5rem;
+            }
+
+            .student-container {
+                padding: 1rem;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- 로그인 화면 -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-card">
+            <h1>교실 응답 시스템</h1>
+            <div class="login-emoji">😀😡😥🥳</div>
+            <input type="text" id="loginInput" class="login-input" placeholder="이름을 입력하세요" autocomplete="off">
+            <button id="loginBtn" class="login-btn">입장하기</button>
+            <p class="login-hint">© 2025 KSMS APPS. All rights reserved.</p>
+        </div>
+    </div>
+
+    <!-- 이미지 모달 -->
+    <div id="imageModal" class="image-modal">
+        <button class="close-modal" onclick="closeImageModal()">✕</button>
+        <img id="modalImage" src="" alt="확대 이미지">
+        <div class="student-name" id="modalStudentName"></div>
+    </div>
+
+    <!-- 교사용 화면 -->
+    <div id="teacherApp" class="teacher-app">
+        <header class="app-header">
+            <h1>🎓 교실 응답 시스템</h1>
+            <div class="header-controls">
+                <div id="teacherConnection" class="connection-status">
+                    <span class="dot"></span>
+                    <span>연결 중...</span>
+                </div>
+                <button id="participantBtn" class="btn btn-secondary">😎 0명 참가</button>
+                <div class="user-badge teacher">👨‍🏫 선생님</div>
+                <button id="teacherLogout" class="btn btn-danger">나가기</button>
+            </div>
+        </header>
+        <div class="teacher-container">
+            <div class="control-panel">
+                <div class="panel-title">🎯 응답 유형 선택</div>
+                <div class="mode-buttons">
+                    <button class="mode-btn" data-mode="ox">
+                        <span class="icon">⭕</span>
+                        OX 퀴즈
+                    </button>
+                    <button class="mode-btn" data-mode="choice">
+                        <span class="icon">🔢</span>
+                        선택 퀴즈
+                    </button>
+                    <button class="mode-btn" data-mode="text">
+                        <span class="icon">✏️</span>
+                        텍스트
+                    </button>
+                    <button class="mode-btn" data-mode="whiteboard">
+                        <span class="icon">🎨</span>
+                        화이트보드
+                    </button>
+                </div>
+
+                <div id="questionArea" class="question-input-area hidden">
+                    <label>📝 질문 내용 (선택사항)</label>
+                    <textarea id="questionInput" class="question-input" placeholder="학생들에게 보여줄 질문을 입력하세요"></textarea>
+                    
+                    <div id="choicesArea" class="choices-config hidden">
+                        <div class="choice-count-selector">
+                            <label>선택지 개수</label>
+                            <select id="choiceCount">
+                                <option value="2">2개</option>
+                                <option value="3">3개</option>
+                                <option value="4" selected>4개</option>
+                                <option value="5">5개</option>
+                                <option value="6">6개</option>
+                                <option value="7">7개</option>
+                                <option value="8">8개</option>
+                                <option value="9">9개</option>
+                                <option value="10">10개</option>
+                            </select>
+                        </div>
+                        <div class="choices-input" id="choicesInputContainer"></div>
+                    </div>
+
+                    <button id="sendQuestion" class="btn btn-primary btn-lg btn-block" style="margin-top: 1rem;">📤 학생들에게 전송</button>
+                    <button id="clearResponses" class="btn btn-outline btn-lg btn-block" style="margin-top: 0.5rem;">🗑️ 응답 초기화</button>
+                </div>
+            </div>
+
+            <div class="dashboard">
+                <div class="dashboard-header">
+                    <h2>📊 응답 현황</h2>
+                    <div class="dashboard-actions">
+                        <button id="downloadTextBtn" class="btn btn-outline hidden">📄 텍스트 저장</button>
+                        <button id="downloadImagesBtn" class="btn btn-outline hidden">🖼️ 이미지 저장</button>
+                        <div id="responseCount" class="response-count">0명 응답</div>
+                    </div>
+                </div>
+                
+                <div id="currentQuestion" class="current-question hidden">
+                    <div class="label">📌 현재 질문</div>
+                    <div class="text" id="currentQuestionText"></div>
+                </div>
+
+                <div id="chartContainer" class="chart-container hidden">
+                    <canvas id="responseChart"></canvas>
+                </div>
+
+                <div id="responsesArea">
+                    <div class="waiting-message">
+                        <div class="icon">🤔</div>
+                        <p>응답 유형을 선택하고 질문을 전송하세요</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 학생용 화면 -->
+    <div id="studentApp" class="student-app">
+        <header class="app-header">
+            <h1>🎓 교실 응답 시스템</h1>
+            <div class="header-controls">
+                <div id="studentConnection" class="connection-status">
+                    <span class="dot"></span>
+                    <span>연결 중...</span>
+                </div>
+                <div class="user-badge" id="studentBadge">😊 학생</div>
+                <button id="studentLogout" class="btn btn-danger">나가기</button>
+            </div>
+        </header>
+        <div class="student-container">
+            <div id="studentWaiting" class="student-waiting">
+                <div class="icon">🙋</div>
+                <h2>선생님을 기다리는 중</h2>
+                <p>질문이 전송되면 여기에 표시됩니다</p>
+            </div>
+
+            <div id="studentQuestion" class="student-question-card hidden">
+                <div class="student-question-header">
+                    <div class="mode-label" id="studentModeLabel">⭕ OX 퀴즈</div>
+                    <div class="question-text" id="studentQuestionText"></div>
+                </div>
+                <div class="student-answer-area" id="studentAnswerArea"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <script>
+        // ============================================
+        // 🔥 Firebase 설정 - 여기를 수정하세요!
+        // ============================================
+        const firebaseConfig = {
+    apiKey: "AIzaSyAFgPEE_KJimDHldjsijmVw5Kpgjnu9M2E",
+    authDomain: "classroom-response.firebaseapp.com",
+    databaseURL: "https://classroom-response-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "classroom-response",
+    storageBucket: "classroom-response.firebasestorage.app",
+    messagingSenderId: "79100966532",
+    appId: "1:79100966532:web:57b0849652e240ee9574d1",
+    measurementId: "G-HQCM7WGQDH"
+};
+
+        // ============================================
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        let currentUser = null;
+        let isTeacher = false;
+        let currentMode = null;
+        let currentChoiceCount = 4;
+        let responseChart = null;
+        let isDrawing = false;
+        let drawContext = null;
+        let lastX = 0;
+        let lastY = 0;
+        let currentColor = '#000000';
+        let brushSize = 3;
+        let currentResponses = null;
+        let currentParticipants = null;
+        let showingParticipants = false;
+
+        const loginScreen = document.getElementById('loginScreen');
+        const teacherApp = document.getElementById('teacherApp');
+        const studentApp = document.getElementById('studentApp');
+        const loginInput = document.getElementById('loginInput');
+        const loginBtn = document.getElementById('loginBtn');
+
+        loginBtn.addEventListener('click', handleLogin);
+        loginInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleLogin();
+        });
+
+        window.addEventListener('load', () => {
+            const savedSession = localStorage.getItem('classroomSession');
+            if (savedSession) {
+                const session = JSON.parse(savedSession);
+                currentUser = session.name;
+                isTeacher = session.isTeacher;
+                if (isTeacher) {
+                    showTeacherApp();
+                } else {
+                    showStudentApp();
+                }
+            }
+        });
+
+        function handleLogin() {
+            const input = loginInput.value.trim();
+            if (!input) {
+                alert('이름을 입력해주세요!');
+                return;
+            }
+
+            if (input === 'ksms' || input === 'KSMS' || input === 'ㅏ는') {
+                isTeacher = true;
+                currentUser = '선생님';
+                localStorage.setItem('classroomSession', JSON.stringify({name: currentUser, isTeacher: true}));
+                showTeacherApp();
+            } else {
+                isTeacher = false;
+                currentUser = input;
+                localStorage.setItem('classroomSession', JSON.stringify({name: currentUser, isTeacher: false}));
+                showStudentApp();
+            }
+        }
+
+        function showTeacherApp() {
+            loginScreen.style.display = 'none';
+            teacherApp.style.display = 'block';
+            studentApp.style.display = 'none';
+            initTeacherApp();
+        }
+
+        function showStudentApp() {
+            loginScreen.style.display = 'none';
+            teacherApp.style.display = 'none';
+            studentApp.style.display = 'block';
+            document.getElementById('studentBadge').textContent = `😊 ${currentUser}`;
+            
+            database.ref(`participants/${sanitizeKey(currentUser)}`).set({
+                name: currentUser,
+                joinedAt: Date.now()
+            });
+            
+            window.addEventListener('beforeunload', () => {
+                database.ref(`participants/${sanitizeKey(currentUser)}`).remove();
+            });
+            
+            initStudentApp();
+        }
+
+        function initTeacherApp() {
+            const connectedRef = database.ref('.info/connected');
+            connectedRef.on('value', (snap) => {
+                const statusEl = document.getElementById('teacherConnection');
+                if (snap.val() === true) {
+                    statusEl.classList.add('connected');
+                    statusEl.querySelector('span:last-child').textContent = '연결됨';
+                } else {
+                    statusEl.classList.remove('connected');
+                    statusEl.querySelector('span:last-child').textContent = '연결 끊김';
+                }
+            });
+
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentMode = btn.dataset.mode;
+                    
+                    document.getElementById('questionArea').classList.remove('hidden');
+                    document.getElementById('choicesArea').classList.toggle('hidden', currentMode !== 'choice');
+                    
+                    if (currentMode === 'choice') {
+                        updateChoiceInputs();
+                    }
+                });
+            });
+
+            document.getElementById('choiceCount').addEventListener('change', (e) => {
+                currentChoiceCount = parseInt(e.target.value);
+                updateChoiceInputs();
+            });
+
+            document.getElementById('sendQuestion').addEventListener('click', sendQuestion);
+            document.getElementById('clearResponses').addEventListener('click', clearResponses);
+            document.getElementById('downloadTextBtn').addEventListener('click', downloadTextResponses);
+            document.getElementById('downloadImagesBtn').addEventListener('click', downloadAllImages);
+            document.getElementById('teacherLogout').addEventListener('click', logout);
+            document.getElementById('participantBtn').addEventListener('click', toggleParticipantView);
+
+            database.ref('participants').on('value', (snapshot) => {
+                currentParticipants = snapshot.val();
+                const count = currentParticipants ? Object.keys(currentParticipants).length : 0;
+                document.getElementById('participantBtn').textContent = `😎 ${count}명 참가`;
+                
+                if (showingParticipants) {
+                    showParticipantList();
+                }
+            });
+
+            database.ref('responses').on('value', (snapshot) => {
+                currentResponses = snapshot.val();
+                updateDashboard(currentResponses);
+            });
+
+            database.ref('currentQuestion').once('value', (snapshot) => {
+                const question = snapshot.val();
+                if (question) {
+                    currentMode = question.mode;
+                    if (question.choiceCount) {
+                        currentChoiceCount = question.choiceCount;
+                    }
+                    
+                    document.querySelectorAll('.mode-btn').forEach(btn => {
+                        if (btn.dataset.mode === currentMode) {
+                            btn.classList.add('active');
+                        }
+                    });
+                    document.getElementById('questionArea').classList.remove('hidden');
+                    document.getElementById('choicesArea').classList.toggle('hidden', currentMode !== 'choice');
+                    document.getElementById('questionInput').value = question.question || '';
+                    document.getElementById('currentQuestion').classList.remove('hidden');
+                    document.getElementById('currentQuestionText').textContent = question.question || '(질문 없음)';
+                    
+                    document.getElementById('downloadTextBtn').classList.toggle('hidden', currentMode !== 'text');
+                    document.getElementById('downloadImagesBtn').classList.toggle('hidden', currentMode !== 'whiteboard');
+                    
+                    if (currentMode === 'choice') {
+                        document.getElementById('choiceCount').value = currentChoiceCount;
+                        updateChoiceInputs();
+                        if (question.choices) {
+                            question.choices.forEach((choice, i) => {
+                                const input = document.getElementById(`choice${i + 1}`);
+                                if (input) input.value = choice;
+                            });
+                        }
+                    }
+                }
+            });
+
+            updateChoiceInputs();
+        }
+
+        function updateChoiceInputs() {
+            const container = document.getElementById('choicesInputContainer');
+            container.innerHTML = '';
+            for (let i = 1; i <= currentChoiceCount; i++) {
+                const row = document.createElement('div');
+                row.className = 'choice-row';
+                row.innerHTML = `
+                    <span>${i}</span>
+                    <input type="text" id="choice${i}" placeholder="${i}번 선택지">
+                `;
+                container.appendChild(row);
+            }
+        }
+
+        function sendQuestion() {
+            const questionText = document.getElementById('questionInput').value.trim();
+
+            const questionData = {
+                mode: currentMode,
+                question: questionText,
+                timestamp: Date.now()
+            };
+
+            if (currentMode === 'choice') {
+                const choices = [];
+                for (let i = 1; i <= currentChoiceCount; i++) {
+                    const choiceEl = document.getElementById(`choice${i}`);
+                    choices.push(choiceEl ? choiceEl.value || `${i}번` : `${i}번`);
+                }
+                questionData.choices = choices;
+                questionData.choiceCount = currentChoiceCount;
+            }
+
+            database.ref('currentQuestion').set(questionData);
+            database.ref('responses').remove();
+
+            document.getElementById('currentQuestion').classList.remove('hidden');
+            document.getElementById('currentQuestionText').textContent = questionText || '(질문 없음)';
+
+            document.getElementById('downloadTextBtn').classList.toggle('hidden', currentMode !== 'text');
+            document.getElementById('downloadImagesBtn').classList.toggle('hidden', currentMode !== 'whiteboard');
+            showingParticipants = false;
+        }
+
+        function clearResponses() {
+            if (confirm('모든 응답을 삭제하시겠습니까?')) {
+                database.ref('responses').remove();
+                database.ref('currentQuestion').remove();
+                document.getElementById('currentQuestion').classList.add('hidden');
+                document.getElementById('chartContainer').classList.add('hidden');
+                document.getElementById('downloadTextBtn').classList.add('hidden');
+                document.getElementById('downloadImagesBtn').classList.add('hidden');
+                showingParticipants = false;
+            }
+        }
+
+        function toggleParticipantView() {
+            showingParticipants = !showingParticipants;
+            if (showingParticipants) {
+                showParticipantList();
+            } else {
+                updateDashboard(currentResponses);
+            }
+        }
+
+        function showParticipantList() {
+            const responsesArea = document.getElementById('responsesArea');
+            const chartContainer = document.getElementById('chartContainer');
+            chartContainer.classList.add('hidden');
+
+            if (!currentParticipants) {
+                responsesArea.innerHTML = `
+                    <div class="waiting-message">
+                        <div class="icon">🙈</div>
+                        <p>아직 참가한 학생이 없습니다</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const participantList = Object.entries(currentParticipants);
+            
+            let html = `
+                <div class="participant-list-header">
+                    <h3>👥 참가자 목록 (${participantList.length}명)</h3>
+                    <button class="btn btn-outline" onclick="toggleParticipantView()">📊 응답 현황으로</button>
+                </div>
+                <div class="responses-grid">
+            `;
+
+            participantList.forEach(([key, data]) => {
+                html += `
+                    <div class="response-card participant-card">
+                        <div class="name">${escapeHtml(data.name)}</div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            responsesArea.innerHTML = html;
+        }
+
+        function updateDashboard(responses) {
+            if (showingParticipants) return;
+            
+            const responsesArea = document.getElementById('responsesArea');
+            const countEl = document.getElementById('responseCount');
+            const chartContainer = document.getElementById('chartContainer');
+
+            if (!responses) {
+                countEl.textContent = '0명 응답';
+                responsesArea.innerHTML = `
+                    <div class="waiting-message">
+                        <div class="icon">😴</div>
+                        <p>아직 응답이 없습니다</p>
+                    </div>
+                `;
+                chartContainer.classList.add('hidden');
+                return;
+            }
+
+            const responseList = Object.entries(responses);
+            countEl.textContent = `${responseList.length}명 응답`;
+
+            if (currentMode === 'ox' || currentMode === 'choice') {
+                chartContainer.classList.remove('hidden');
+                updateChart(responseList);
+            } else {
+                chartContainer.classList.add('hidden');
+            }
+
+            responsesArea.innerHTML = '';
+            const grid = document.createElement('div');
+            grid.className = 'responses-grid';
+
+            responseList.forEach(([key, data]) => {
+                const card = document.createElement('div');
+                card.className = 'response-card';
+
+                let answerHTML = '';
+                if (currentMode === 'ox') {
+                    answerHTML = `<div class="answer ox-${data.answer.toLowerCase()}">${data.answer}</div>`;
+                } else if (currentMode === 'choice') {
+                    answerHTML = `<div class="answer choice">${data.answer}번</div>`;
+                } else if (currentMode === 'text') {
+                    answerHTML = `<div class="text-answer">${escapeHtml(data.answer)}</div>`;
+                } else if (currentMode === 'whiteboard') {
+                    answerHTML = `<img class="image-answer" src="${data.answer}" alt="그림" onclick="openImageModal('${data.answer}', '${escapeHtml(data.name)}')">`;
+                }
+
+                card.innerHTML = `
+                    <div class="name">${escapeHtml(data.name)}</div>
+                    ${answerHTML}
+                `;
+                grid.appendChild(card);
+            });
+
+            responsesArea.appendChild(grid);
+        }
+
+        function updateChart(responseList) {
+            const ctx = document.getElementById('responseChart').getContext('2d');
+            
+            if (responseChart) {
+                responseChart.destroy();
+            }
+
+            let labels, data, backgroundColor;
+
+            if (currentMode === 'ox') {
+                const oCount = responseList.filter(([_, d]) => d.answer === 'O').length;
+                const xCount = responseList.filter(([_, d]) => d.answer === 'X').length;
+                labels = ['O', 'X'];
+                data = [oCount, xCount];
+                backgroundColor = ['#10B981', '#EF4444'];
+            } else if (currentMode === 'choice') {
+                labels = [];
+                data = [];
+                const counts = {};
+                
+                responseList.forEach(([_, d]) => {
+                    const answer = d.answer;
+                    counts[answer] = (counts[answer] || 0) + 1;
+                });
+
+                for (let i = 1; i <= currentChoiceCount; i++) {
+                    const choiceInput = document.getElementById(`choice${i}`);
+                    const choiceText = choiceInput ? (choiceInput.value || `${i}번`) : `${i}번`;
+                    labels.push(choiceText);
+                    data.push(counts[i] || 0);
+                }
+                
+                const colors = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'];
+                backgroundColor = colors.slice(0, currentChoiceCount);
+            }
+
+            responseChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: backgroundColor,
+                        borderWidth: 0,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: { size: 12, family: 'Noto Sans KR' },
+                                padding: 16
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function openImageModal(imageSrc, studentName) {
+            const modal = document.getElementById('imageModal');
+            const modalImage = document.getElementById('modalImage');
+            const modalStudentName = document.getElementById('modalStudentName');
+            
+            modalImage.src = imageSrc;
+            modalStudentName.textContent = studentName;
+            modal.classList.add('active');
+        }
+
+        function closeImageModal() {
+            const modal = document.getElementById('imageModal');
+            modal.classList.remove('active');
+        }
+
+        document.getElementById('imageModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                closeImageModal();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeImageModal();
+            }
+        });
+
+        function downloadTextResponses() {
+            if (!currentResponses) {
+                alert('다운로드할 응답이 없습니다.');
+                return;
+            }
+
+            const responseList = Object.entries(currentResponses);
+            const questionText = document.getElementById('currentQuestionText').textContent;
+            
+            let content = `[KSMS APPS] 교실 응답 시스템 - 텍스트 응답 모음\n`;
+            content += `========================================\n`;
+            content += `질문: ${questionText}\n`;
+            content += `응답 수: ${responseList.length}명\n`;
+            content += `저장 시간: ${new Date().toLocaleString('ko-KR')}\n`;
+            content += `========================================\n\n`;
+
+            responseList.forEach(([key, data], index) => {
+                content += `[${index + 1}] ${data.name}\n`;
+                content += `${data.answer}\n`;
+                content += `----------------------------------------\n`;
+            });
+
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `text_responses_${new Date().toISOString().slice(0,10)}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        async function downloadAllImages() {
+            if (!currentResponses) {
+                alert('다운로드할 응답이 없습니다.');
+                return;
+            }
+
+            const responseList = Object.entries(currentResponses);
+            const zip = new JSZip();
+            
+            let nameList = '화이트보드 제출 목록\n';
+            nameList += '====================\n\n';
+
+            responseList.forEach(([key, data], index) => {
+                const base64Data = data.answer.split(',')[1];
+                const fileNum = String(index + 1).padStart(2, '0');
+                const fileName = `image_${fileNum}.png`;
+                zip.file(fileName, base64Data, { base64: true });
+                
+                nameList += `${fileNum}. ${data.name}\n`;
+            });
+            
+            zip.file('_name_list.txt', nameList);
+
+            const content = await zip.generateAsync({ type: 'blob' });
+            const url = URL.createObjectURL(content);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `whiteboard_${new Date().toISOString().slice(0,10)}.zip`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function initStudentApp() {
+            const connectedRef = database.ref('.info/connected');
+            connectedRef.on('value', (snap) => {
+                const statusEl = document.getElementById('studentConnection');
+                if (snap.val() === true) {
+                    statusEl.classList.add('connected');
+                    statusEl.querySelector('span:last-child').textContent = '연결됨';
+                } else {
+                    statusEl.classList.remove('connected');
+                    statusEl.querySelector('span:last-child').textContent = '연결 끊김';
+                }
+            });
+
+            document.getElementById('studentLogout').addEventListener('click', logout);
+
+            database.ref('currentQuestion').on('value', (snapshot) => {
+                const question = snapshot.val();
+                if (question) {
+                    showStudentQuestion(question);
+                } else {
+                    hideStudentQuestion();
+                }
+            });
+        }
+
+        function showStudentQuestion(question) {
+            document.getElementById('studentWaiting').classList.add('hidden');
+            document.getElementById('studentQuestion').classList.remove('hidden');
+
+            const modeLabels = {
+                ox: '⭕ OX 퀴즈',
+                choice: '🔢 선택 퀴즈',
+                text: '✏️ 텍스트',
+                whiteboard: '🎨 화이트보드'
+            };
+
+            document.getElementById('studentModeLabel').textContent = modeLabels[question.mode];
+            document.getElementById('studentQuestionText').textContent = question.question || '';
+
+            const answerArea = document.getElementById('studentAnswerArea');
+            currentMode = question.mode;
+            if (question.choiceCount) {
+                currentChoiceCount = question.choiceCount;
+            }
+
+            database.ref(`responses/${sanitizeKey(currentUser)}`).once('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    answerArea.innerHTML = `
+                        <div class="submitted-message">
+                            <div class="icon">🎉</div>
+                            <p>응답이 제출되었습니다!</p>
+                        </div>
+                    `;
+                } else {
+                    renderAnswerInterface(question);
+                }
+            });
+        }
+
+        function renderAnswerInterface(question) {
+            const answerArea = document.getElementById('studentAnswerArea');
+
+            if (question.mode === 'ox') {
+                answerArea.innerHTML = `
+                    <div class="ox-buttons">
+                        <button class="ox-btn o" data-answer="O">O</button>
+                        <button class="ox-btn x" data-answer="X">X</button>
+                    </div>
+                `;
+                answerArea.querySelectorAll('.ox-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        answerArea.querySelectorAll('.ox-btn').forEach(b => b.classList.remove('selected'));
+                        btn.classList.add('selected');
+                        submitAnswer(btn.dataset.answer);
+                    });
+                });
+
+            } else if (question.mode === 'choice') {
+                const choicesHTML = question.choices.map((choice, i) => `
+                    <button class="choice-btn" data-answer="${i + 1}">
+                        <span class="num">${i + 1}</span>
+                        <span>${escapeHtml(choice)}</span>
+                    </button>
+                `).join('');
+                answerArea.innerHTML = `<div class="choice-buttons">${choicesHTML}</div>`;
+                answerArea.querySelectorAll('.choice-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        answerArea.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
+                        btn.classList.add('selected');
+                        submitAnswer(btn.dataset.answer);
+                    });
+                });
+
+            } else if (question.mode === 'text') {
+                answerArea.innerHTML = `
+                    <div class="text-input-area">
+                        <textarea id="textAnswer" placeholder="답변을 입력하세요..."></textarea>
+                        <button class="submit-btn" id="submitText">📤 제출하기</button>
+                    </div>
+                `;
+                document.getElementById('submitText').addEventListener('click', () => {
+                    const answer = document.getElementById('textAnswer').value.trim();
+                    if (answer) submitAnswer(answer);
+                    else alert('답변을 입력해주세요!');
+                });
+
+            } else if (question.mode === 'whiteboard') {
+                answerArea.innerHTML = `
+                    <div class="whiteboard-area">
+                        <canvas id="drawCanvas" class="whiteboard-canvas"></canvas>
+                        <div class="whiteboard-tools">
+                            <input type="color" class="color-picker" id="colorPicker" value="#000000">
+                            <button class="tool-btn" data-size="3">가늘게</button>
+                            <button class="tool-btn active" data-size="5">보통</button>
+                            <button class="tool-btn" data-size="10">굵게</button>
+                            <button class="tool-btn" id="eraserBtn">지우개</button>
+                            <button class="tool-btn" id="clearCanvas">전체 지우기</button>
+                        </div>
+                    </div>
+                    <button class="submit-btn" id="submitDrawing">📤 제출하기</button>
+                `;
+                initWhiteboard();
+            }
+        }
+
+        function initWhiteboard() {
+            const canvas = document.getElementById('drawCanvas');
+            drawContext = canvas.getContext('2d');
+            
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = 280;
+            
+            drawContext.fillStyle = '#ffffff';
+            drawContext.fillRect(0, 0, canvas.width, canvas.height);
+            
+            brushSize = 5;
+            currentColor = '#000000';
+
+            canvas.addEventListener('mousedown', startDraw);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDraw);
+            canvas.addEventListener('mouseout', stopDraw);
+
+            canvas.addEventListener('touchstart', handleTouch);
+            canvas.addEventListener('touchmove', handleTouch);
+            canvas.addEventListener('touchend', stopDraw);
+
+            document.getElementById('colorPicker').addEventListener('change', (e) => {
+                currentColor = e.target.value;
+            });
+
+            document.querySelectorAll('[data-size]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('[data-size]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    brushSize = parseInt(btn.dataset.size);
+                    currentColor = document.getElementById('colorPicker').value;
+                });
+            });
+
+            document.getElementById('eraserBtn').addEventListener('click', () => {
+                currentColor = '#ffffff';
+            });
+
+            document.getElementById('clearCanvas').addEventListener('click', () => {
+                drawContext.fillStyle = '#ffffff';
+                drawContext.fillRect(0, 0, canvas.width, canvas.height);
+            });
+
+            document.getElementById('submitDrawing').addEventListener('click', () => {
+                const dataURL = canvas.toDataURL('image/png');
+                submitAnswer(dataURL);
+            });
+        }
+
+        function startDraw(e) {
+            isDrawing = true;
+            const rect = e.target.getBoundingClientRect();
+            lastX = e.clientX - rect.left;
+            lastY = e.clientY - rect.top;
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const rect = e.target.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            drawContext.beginPath();
+            drawContext.strokeStyle = currentColor;
+            drawContext.lineWidth = brushSize;
+            drawContext.lineCap = 'round';
+            drawContext.moveTo(lastX, lastY);
+            drawContext.lineTo(x, y);
+            drawContext.stroke();
+
+            lastX = x;
+            lastY = y;
+        }
+
+        function stopDraw() {
+            isDrawing = false;
+        }
+
+        function handleTouch(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = e.target.getBoundingClientRect();
+            
+            if (e.type === 'touchstart') {
+                isDrawing = true;
+                lastX = touch.clientX - rect.left;
+                lastY = touch.clientY - rect.top;
+            } else if (e.type === 'touchmove' && isDrawing) {
+                const x = touch.clientX - rect.left;
+                const y = touch.clientY - rect.top;
+
+                drawContext.beginPath();
+                drawContext.strokeStyle = currentColor;
+                drawContext.lineWidth = brushSize;
+                drawContext.lineCap = 'round';
+                drawContext.moveTo(lastX, lastY);
+                drawContext.lineTo(x, y);
+                drawContext.stroke();
+
+                lastX = x;
+                lastY = y;
+            }
+        }
+
+        function hideStudentQuestion() {
+            document.getElementById('studentWaiting').classList.remove('hidden');
+            document.getElementById('studentQuestion').classList.add('hidden');
+        }
+
+        function submitAnswer(answer) {
+            const responseRef = database.ref(`responses/${sanitizeKey(currentUser)}`);
+            responseRef.set({
+                name: currentUser,
+                answer: answer,
+                timestamp: Date.now()
+            });
+
+            document.getElementById('studentAnswerArea').innerHTML = `
+                <div class="submitted-message">
+                    <div class="icon">🎉</div>
+                    <p>응답이 제출되었습니다!</p>
+                </div>
+            `;
+        }
+
+        function logout() {
+            if (isTeacher) {
+                if (confirm('나가시면 모든 응답 데이터가 초기화됩니다. 나가시겠습니까?')) {
+                    database.ref('currentQuestion').remove();
+                    database.ref('responses').remove();
+                    database.ref('participants').remove();
+                    localStorage.removeItem('classroomSession');
+                    location.reload();
+                }
+            } else {
+                database.ref(`participants/${sanitizeKey(currentUser)}`).remove();
+                localStorage.removeItem('classroomSession');
+                location.reload();
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function sanitizeKey(key) {
+            return key.replace(/[.#$\/\[\]]/g, '_');
+        }
+    </script>
+</body>
+</html>
